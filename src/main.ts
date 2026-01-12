@@ -21,7 +21,7 @@ class LyricsScene {
 
   // vars associated with sprite texture transitions
   private sprites: PIXI.Sprite[] = [];
-  private overlaySprites!: PIXI.Sprite;
+  private overlaySprites!: PIXI.Sprite[] = [];
   private textures: PIXI.Texture[] = [];
   private currentTextureIndex: number = 0;
   private isTransitioning: boolean = false;
@@ -50,16 +50,19 @@ class LyricsScene {
 
     this.app.stage.addChild(this.container);
 
-    // Assets loading
-    const texture_main = await PIXI.Assets.load(imageSource);
-    const texture_alt = await PIXI.Assets.load(imageSource);
+    /* preload textures from film gallery
+    * use provided imageSource as fallback
+    */
+    const anchors = Array.from(document.querySelectorAll('#film-gallery a')) as HTMLAnchorElement[];
+    const sources = anchors.map(a => a.href).length ? anchors.map(a => a.href) : [imageSource];
+    this.textures = await Promise.all(sources.map(src => PIXI.Assets.load(src)));
+    const texture_main = this.textures[0];
 
-    // DEPRECATED — texture_main.baseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
-    texture_main.source.mipmaps = false;
+    //texture_main.source.mipmaps = false;
     texture_main.source.scaleMode = 'linear';
-    const sprites = Array(4).fill(null).map(() => new PIXI.Sprite(texture_main));
 
-    this.addSpritesToContainer(sprites);
+    this.sprites = Array(4).fill(null).map(() => new PIXI.Sprite(texture_main));
+    this.addSpritesToContainer(this.sprites);
 
     // Setup Filters
     const blurFilter = [new KawaseBlurFilter(), new KawaseBlurFilter(), new KawaseBlurFilter(), new KawaseBlurFilter()];
@@ -90,18 +93,19 @@ class LyricsScene {
     const colorMatrix = new PIXI.ColorMatrixFilter();
     //
     //colorMatrix.alpha = 1.9;
-    
+
     // Apply the filter stack
     this.container.filters = [contrast, twist, ...blurFilter, saturate, colorMatrix];
     colorMatrix.tint(0xfffcf7, true);
     colorMatrix.enabled = true;
     // Animation Loop
-    let o = sprites.map((h) => h.rotation);
+    let o = this.sprites.map((h) => h.rotation);
 
     const targetFPS = 15;
     const msPerFrame = 1000 / targetFPS;
     let accumulator = 0;
 
+    // Animation loop
     this.app.ticker.add((ticker) => {
       // 1. Accumulate the time passed since the last tick
       accumulator += ticker.deltaMS;
@@ -117,28 +121,115 @@ class LyricsScene {
         const speedFactor = 0.75; // Movement speed multiplier
         const n = (msPerFrame / 33.333333) * speedFactor;
 
-        sprites[0].rotation += 0.003 * n;
-        sprites[1].rotation -= 0.008 * n;
+        this.sprites[0].rotation += 0.003 * n;
+        this.sprites[1].rotation -= 0.008 * n;
 
         // Sprite 2 Orbit
-        sprites[2].rotation -= 0.006 * n;
-        sprites[2].x = this.app.screen.width / 2 +
-          (this.app.screen.width / 4) * Math.cos(sprites[2].rotation * 0.75);
-        sprites[2].y = this.app.screen.height / 2 +
-          (this.app.screen.width / 4) * Math.sin(sprites[2].rotation * 0.75);
+        this.sprites[2].rotation -= 0.006 * n;
+        this.sprites[2].x = this.app.screen.width / 2 +
+          (this.app.screen.width / 4) * Math.cos(this.sprites[2].rotation * 0.75);
+        this.sprites[2].y = this.app.screen.height / 2 +
+          (this.app.screen.width / 4) * Math.sin(this.sprites[2].rotation * 0.75);
 
         // Sprite 3 Orbit
-        sprites[3].rotation += 0.004 * n;
+        this.sprites[3].rotation += 0.004 * n;
         const orbitOffset = (this.app.screen.width / 2) * 0.1;
-        sprites[3].x = this.app.screen.width / 2 + orbitOffset +
-          (this.app.screen.width / 4) * Math.cos(sprites[3].rotation * 0.75);
-        sprites[3].y = this.app.screen.height / 2 + orbitOffset +
-          (this.app.screen.width / 4) * Math.sin(sprites[3].rotation * 0.75);
+        this.sprites[3].x = this.app.screen.width / 2 + orbitOffset +
+          (this.app.screen.width / 4) * Math.cos(this.sprites[3].rotation * 0.75);
+        this.sprites[3].y = this.app.screen.height / 2 + orbitOffset +
+          (this.app.screen.width / 4) * Math.sin(this.sprites[3].rotation * 0.75);
 
         // Keep twist center aligned on resize
-        twist.offset.set(this.app.screen.width / 2, this.app.screen.height / 2);
+        twist.offset.x = this.app.screen.width / 2;
+        twist.offset.y = this.app.screen.height / 2;
       };
     });
+
+    // image crossfade
+    this.app.ticker.add((ticker) => {
+      if (!this.isTransitioning) return;
+
+      this.transitionElapsed += ticker.deltaMS;
+      const t = Math.min(this.transitionElapsed / this.transitionDuration, 1);
+      const eased = t * t * (3 - 2 * t);
+      this.overlaySprites.forEach(s => s.alpha = eased);
+      this.sprites.forEach(s => s.alpha = 1 - eased);
+      if (t >= 1) {
+        // remove old sprites
+        this.sprites.forEach(s => { if (s.parent) this.container.removeChild(s); s.destroy(true); });
+        this.sprites = this.overlaySprites;
+        this.overlaySprites = [];
+        this.isTransitioning = false;
+        this.transitionElapsed = 0;
+      }
+    });
+
+    // listen for scroll
+    this.setupScrollBasedTextureSwap();
+  }
+
+  private setupScrollBasedTextureSwap() {
+    const anchors = Array.from(document.querySelectorAll('#film-gallery a')) as HTMLAnchorElement[];
+    if (!anchors.length || !this.textures.length) return;
+    const chooseClosestIndex = () => {
+      const viewportCenterY = window.innerHeight / 2;
+      const viewportCenterX = window.innerWidth / 2;
+      let closestIndex = 0;
+      let closestYDistance = Infinity;
+      let closestXDistance = Infinity;
+      const EPS = 1; // small epsilon tolerance
+      anchors.forEach((a, idx) => {
+        const rect = a.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const midX = rect.left + rect.width / 2;
+        const dY = Math.abs(midY - viewportCenterY)
+        const dX = Math.abs(midX - viewportCenterX);
+        if (dY < closestYDistance - EPS) { 
+          closestYDistance = dY;
+          closestXDistance = dX;
+          closestIndex = idx; 
+        } else if (Math.abs(dY - closestYDistance) <= EPS && dX < closestXDistance) {
+          // choose closer in X
+          closestXDistance = dX;
+          closestIndex = idx;
+        }
+      });
+      return closestIndex;
+    };
+    let pending = -1;
+    const onscroll = () => {
+      const idx = chooseClosestIndex();
+      if (idx !== this.currentTextureIndex && idx !== pending) {
+        pending = idx;
+        this.startTextureTransitionTo(idx);
+      }
+    };
+    // othrottle scroll position check to every 100ms
+    window.addEventListener('scroll', throttle(onscroll, 100));
+    // initial check
+    onscroll();
+  }
+
+  private startTextureTransitionTo(index: number) {
+    if (this.isTransitioning || !this.textures[index]) return;
+    this.isTransitioning = true;
+    this.transitionElapsed = 0;
+    this.currentTextureIndex = index;
+
+    // create overlay sprites
+    this.overlaySprites = this.sprites.map(s => {
+      const ns = new PIXI.Sprite(this.textures[index]);
+      ns.anchor.set(s.anchor.x, s.anchor.y);
+      ns.position.set(s.position.x, s.position.y);
+      ns.rotation = s.rotation;
+      ns.width = s.width;
+      ns.height = s.height;
+      ns.roundPixels = s.roundPixels;
+      ns.alpha = 0;
+      return ns;
+    });
+    // add overlay above existing sprites
+    this.overlaySprites.forEach(s => this.container.addChild(s));
   }
 
   private addSpritesToContainer(sprites: PIXI.Sprite[]) {
@@ -161,6 +252,16 @@ class LyricsScene {
     r.width = width * 0.25; r.height = r.width;
 
     this.container.addChild(t, s, i, r);
+  }
+}
+
+function throttle(fn: (...args: any[]) => void, wait: number) {
+  let last = 0;
+  return (...args: any[]) => {
+    const now = Date.now();
+    if (now - last >= wait) {
+      last = now; fn(...args);
+    };
   }
 }
 
