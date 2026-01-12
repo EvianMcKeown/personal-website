@@ -26,7 +26,7 @@ class LyricsScene {
   private currentTextureIndex: number = 0;
   private isTransitioning: boolean = false;
   private transitionElapsed: number = 0;
-  private transitionDuration: number = 1000; // in milliseconds
+  private transitionDuration: number = 5000; // in milliseconds
 
   constructor() {
     this.app = new PIXI.Application();
@@ -55,7 +55,19 @@ class LyricsScene {
     */
     const anchors = Array.from(document.querySelectorAll('#film-gallery a')) as HTMLAnchorElement[];
     const sources = anchors.map(a => a.href).length ? anchors.map(a => a.href) : [imageSource];
-    this.textures = await Promise.all(sources.map(src => PIXI.Assets.load(src)));
+    
+    const loaded = await Promise.all(sources.map(async (src) => {
+      try {return await PIXI.Assets.load(src);}
+      catch (err) {console.warn(`Failed to load texture: ${src}`, err); return null;}
+    }));
+    this.textures = loaded.filter(Boolean) as PIXI.Texture[];
+
+    // fallback to single texture if none loaded
+    if (!this.textures.length) {
+      const fallbackTexture = await PIXI.Assets.load(imageSource);
+      this.textures = [fallbackTexture];
+    }
+
     const texture_main = this.textures[0];
 
     //texture_main.source.mipmaps = false;
@@ -156,7 +168,11 @@ class LyricsScene {
       this.sprites.forEach(s => s.alpha = 1 - eased);
       if (t >= 1) {
         // remove old sprites
-        this.sprites.forEach(s => { if (s.parent) this.container.removeChild(s); s.destroy(true); });
+        this.sprites.forEach(s => { 
+          if (s.parent) this.container.removeChild(s);
+          // don't destroy textures to allow reuse
+          s.destroy({ texture: false });
+        });
         this.sprites = this.overlaySprites;
         this.overlaySprites = [];
         this.isTransitioning = false;
