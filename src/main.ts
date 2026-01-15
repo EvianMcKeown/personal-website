@@ -17,7 +17,7 @@ lightbox.init();
 // 2. Background
 class LyricsScene {
   private app: PIXI.Application;
-  private container: PIXI.Container;
+  private backgroundLayer: PIXI.Container;
 
   // vars associated with sprite texture transitions
   private sprites: PIXI.Sprite[] = [];
@@ -27,10 +27,11 @@ class LyricsScene {
   private isTransitioning: boolean = false;
   private transitionElapsed: number = 0;
   private transitionDuration: number = 5000; // in milliseconds
+  private renderResolution: number = 0.25;
 
   constructor() {
     this.app = new PIXI.Application();
-    this.container = new PIXI.Container();
+    this.backgroundLayer = new PIXI.Container();
   }
 
   async init(canvas: HTMLCanvasElement, imageSource: string) {
@@ -42,13 +43,13 @@ class LyricsScene {
       canvas: canvas,
       resizeTo: window,
       backgroundAlpha: 0,
-      resolution: 0.25,
+      resolution: 1,
       autoDensity: true,
       antialias: false,
       powerPreference: 'low-power',
     });
 
-    this.app.stage.addChild(this.container);
+    this.app.stage.addChild(this.backgroundLayer);
 
     /* preload textures from film gallery
     * use provided imageSource as fallback
@@ -68,47 +69,60 @@ class LyricsScene {
       this.textures = [fallbackTexture];
     }
 
+    this.textures.forEach(texture => {
+      texture.source.scaleMode = 'linear';
+      texture.source.addressMode = 'mirror-repeat';
+    });
     const texture_main = this.textures[0];
 
     //texture_main.source.mipmaps = false;
-    texture_main.source.scaleMode = 'linear';
+    //texture_main.source.scaleMode = 'linear';
+    //texture_main.source.addressMode = 'mirror-repeat';
 
     this.sprites = Array(4).fill(null).map(() => new PIXI.Sprite(texture_main));
     this.addSpritesToContainer(this.sprites);
 
     // Setup Filters
-    const blurFilter = [new KawaseBlurFilter(), new KawaseBlurFilter(), new KawaseBlurFilter(), new KawaseBlurFilter()];
+    const blurFilter = [new KawaseBlurFilter(), new KawaseBlurFilter(), new KawaseBlurFilter()];
     blurFilter[0].quality = 2;
     blurFilter[0].strength = 10;
+    blurFilter[0].resolution = this.renderResolution;
     blurFilter[1].quality = 2;
     blurFilter[1].strength = 30;
-    blurFilter[2].quality = 2;
-    blurFilter[2].strength = 40;
-    blurFilter[3].quality = 3;
-    blurFilter[3].strength = 60;
+    blurFilter[1].resolution = this.renderResolution;
+    blurFilter[2].quality = 3;
+    blurFilter[2].strength = 60;
+    blurFilter[2].resolution = this.renderResolution;
 
     const twist = new TwistFilter({
       angle: -3.5,
       radius: 900,
       offset: new PIXI.Point(this.app.screen.width / 2, this.app.screen.height / 2),
     });
+    twist.resolution = this.renderResolution;
+    twist.padding = 200;
 
     const contrast = new AdjustmentFilter({
       brightness: 0.9,
       contrast: 1.2,
     });
+    contrast.resolution = this.renderResolution;
 
     const saturate = new AdjustmentFilter({
       saturation: 4.0,
     });
+    saturate.resolution = this.renderResolution;
 
     const colorMatrix = new PIXI.ColorMatrixFilter();
     //
     //colorMatrix.alpha = 1.9;
 
     // Apply the filter stack
-    this.container.filters = [contrast, twist, ...blurFilter, saturate, colorMatrix];
+    this.backgroundLayer.filters = [contrast, twist, ...blurFilter, saturate, colorMatrix];
+    this.backgroundLayer.filterArea = this.app.screen;
+    
     colorMatrix.tint(0xfffcf7, true);
+    colorMatrix.resolution = this.renderResolution;
     colorMatrix.enabled = true;
     // Animation Loop
     let o = this.sprites.map((h) => h.rotation);
@@ -169,7 +183,7 @@ class LyricsScene {
       if (t >= 1) {
         // remove old sprites
         this.sprites.forEach(s => { 
-          if (s.parent) this.container.removeChild(s);
+          if (s.parent) this.backgroundLayer.removeChild(s);
           // don't destroy textures to allow reuse
           s.destroy({ texture: false });
         });
@@ -245,7 +259,7 @@ class LyricsScene {
       return ns;
     });
     // add overlay above existing sprites
-    this.overlaySprites.forEach(s => this.container.addChild(s));
+    this.overlaySprites.forEach(s => this.backgroundLayer.addChild(s));
   }
 
   private addSpritesToContainer(sprites: PIXI.Sprite[]) {
@@ -267,7 +281,7 @@ class LyricsScene {
     i.width = width * 0.5; i.height = i.width;
     r.width = width * 0.25; r.height = r.width;
 
-    this.container.addChild(t, s, i, r);
+    this.backgroundLayer.addChild(t, s, i, r);
   }
 }
 
