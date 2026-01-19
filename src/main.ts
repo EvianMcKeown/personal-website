@@ -133,7 +133,7 @@ class LyricsScene {
     brightness.resolution = this.renderResolution;
 
     const saturate = new AdjustmentFilter({
-      saturation: 4.0,
+      saturation: 2.8,
     });
     saturate.resolution = this.renderResolution;
 
