@@ -126,11 +126,11 @@ class LyricsScene {
     twist.resolution = this.renderResolution;
     twist.padding = 200;
 
-    const contrast = new AdjustmentFilter({
-      brightness: 0.9,
-      contrast: 1.2,
+    const brightness = new AdjustmentFilter({
+      brightness: 0.7,
+      contrast: 1.7,
     });
-    contrast.resolution = this.renderResolution;
+    brightness.resolution = this.renderResolution;
 
     const saturate = new AdjustmentFilter({
       saturation: 4.0,
@@ -144,6 +144,7 @@ class LyricsScene {
     // Apply the filter stack
     this.backgroundLayer.filters = [
       saturate,
+      brightness,
       twist,
       ...blurFilter,
       colorMatrix,
