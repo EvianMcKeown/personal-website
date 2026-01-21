@@ -163,17 +163,12 @@ class LyricsScene {
 
     // Animation loop
     this.app.ticker.add((ticker) => {
-      // 1. Accumulate the time passed since the last tick
+      // Accumulate the time passed since the last tick
       accumulator += ticker.deltaMS;
 
-      // 2. Only update if enough time has passed for our lower frame rate
+      // Only update if enough time has passed
       if (accumulator >= msPerFrame) {
         accumulator -= msPerFrame;
-
-        /** * 3. MOVEMENT SPEED
-         * Originally, ticker.deltaMS / 33.33 (normalized to 30fps).
-         * To move LESS, we multiply this by a smaller factor (0.75).
-         */
         const speedFactor = 0.75; // Movement speed multiplier
         const n = (msPerFrame / 33.333333) * speedFactor;
 
@@ -185,11 +180,11 @@ class LyricsScene {
         this.sprites[2].x =
           this.app.screen.width / 2 +
           (this.app.screen.width / 4) *
-            Math.cos(this.sprites[2].rotation * 0.75);
+          Math.cos(this.sprites[2].rotation * 0.75);
         this.sprites[2].y =
           this.app.screen.height / 2 +
           (this.app.screen.width / 4) *
-            Math.sin(this.sprites[2].rotation * 0.75);
+          Math.sin(this.sprites[2].rotation * 0.75);
 
         // Sprite 3 Orbit
         this.sprites[3].rotation += 0.004 * n;
@@ -198,12 +193,12 @@ class LyricsScene {
           this.app.screen.width / 2 +
           orbitOffset +
           (this.app.screen.width / 4) *
-            Math.cos(this.sprites[3].rotation * 0.75);
+          Math.cos(this.sprites[3].rotation * 0.75);
         this.sprites[3].y =
           this.app.screen.height / 2 +
           orbitOffset +
           (this.app.screen.width / 4) *
-            Math.sin(this.sprites[3].rotation * 0.75);
+          Math.sin(this.sprites[3].rotation * 0.75);
 
         // Keep twist center aligned on resize
         twist.offset.x = this.app.screen.width / 2;
@@ -217,7 +212,9 @@ class LyricsScene {
 
       this.transitionElapsed += ticker.deltaMS;
       const t = Math.min(this.transitionElapsed / this.transitionDuration, 1);
-      const eased = t * t * (3 - 2 * t);
+      //const eased = t * t * (3 - 2 * t);
+      //const eased = t > 0.5 ? 4*Math.pow((t-1),2)+1 : 4*Math.pow(t,2);
+      const eased = t 
       this.overlaySprites.forEach((s) => (s.alpha = eased));
       this.sprites.forEach((s) => (s.alpha = 1 - eased));
       if (t >= 1) {
@@ -243,44 +240,13 @@ class LyricsScene {
       document.querySelectorAll("#film-gallery a"),
     ) as HTMLAnchorElement[];
     if (!anchors.length || !this.textures.length) return;
-    /*const chooseClosestIndex = () => {
-      const viewportCenterY = window.innerHeight / 2;
-      const viewportCenterX = window.innerWidth / 2;
-      let closestIndex = 0;
-      let closestYDistance = Infinity;
-      let closestXDistance = Infinity;
-      const EPS = 1; // small epsilon tolerance
-      anchors.forEach((a, idx) => {
-        const rect = a.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        const midX = rect.left + rect.width / 2;
-        const dY = Math.abs(midY - viewportCenterY);
-        const dX = Math.abs(midX - viewportCenterX);
-        if (dY < closestYDistance - EPS) {
-          closestYDistance = dY;
-          closestXDistance = dX;
-          closestIndex = idx;
-        } else if (
-          Math.abs(dY - closestYDistance) <= EPS &&
-          dX < closestXDistance
-        ) {
-          // choose closer in X
-          closestXDistance = dX;
-          closestIndex = idx;
-        }
-      });
-      return closestIndex;
-    };
-    */
 
     const chooseClosestIndex = () => {
-      //var docParentNode = document.body.parentNode;
       var docElm = document.documentElement;
-      var pos = (document.body.scrollTop || docElm.scrollTop ) / (docElm.scrollHeight - docElm.clientHeight) * 100;
-      // quotient
+      var pos = (document.body.scrollTop || docElm.scrollTop) / (docElm.scrollHeight - docElm.clientHeight) * 100;
       var idx = Math.round(pos / 100 * anchors.length);
       return idx;
-    } 
+    }
 
     let pending = -1;
     const onscroll = () => {
@@ -290,7 +256,7 @@ class LyricsScene {
         this.startTextureTransitionTo(idx);
       }
     };
-    
+
     // othrottle scroll position check to every 100ms
     window.addEventListener("scroll", throttle(onscroll, 100));
     // initial check
@@ -298,7 +264,12 @@ class LyricsScene {
   }
 
   private startTextureTransitionTo(index: number) {
-    if (this.isTransitioning || !this.textures[index]) return;
+    if (this.isTransitioning || !this.textures[index]) {
+      if (this.isTransitioning) {
+        this.isTransitioning = false;
+      };
+      return
+    };
     this.isTransitioning = true;
     this.transitionElapsed = 0;
     this.currentTextureIndex = index;
