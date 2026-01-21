@@ -243,7 +243,7 @@ class LyricsScene {
       document.querySelectorAll("#film-gallery a"),
     ) as HTMLAnchorElement[];
     if (!anchors.length || !this.textures.length) return;
-    const chooseClosestIndex = () => {
+    /*const chooseClosestIndex = () => {
       const viewportCenterY = window.innerHeight / 2;
       const viewportCenterX = window.innerWidth / 2;
       let closestIndex = 0;
@@ -271,6 +271,17 @@ class LyricsScene {
       });
       return closestIndex;
     };
+    */
+
+    const chooseClosestIndex = () => {
+      //var docParentNode = document.body.parentNode;
+      var docElm = document.documentElement;
+      var pos = (document.body.scrollTop || docElm.scrollTop ) / (docElm.scrollHeight - docElm.clientHeight) * 100;
+      // quotient
+      var idx = Math.round(pos / 100 * anchors.length);
+      return idx;
+    } 
+
     let pending = -1;
     const onscroll = () => {
       const idx = chooseClosestIndex();
@@ -279,6 +290,7 @@ class LyricsScene {
         this.startTextureTransitionTo(idx);
       }
     };
+    
     // othrottle scroll position check to every 100ms
     window.addEventListener("scroll", throttle(onscroll, 100));
     // initial check
