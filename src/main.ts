@@ -42,7 +42,8 @@ class LyricsScene {
     await this.app.init({
       canvas: canvas,
       resizeTo: window,
-      backgroundAlpha: 0,
+      backgroundAlpha: 1,
+      backgroundColor: '000000',
       resolution: 1,
       autoDensity: true,
       antialias: false,
@@ -50,6 +51,13 @@ class LyricsScene {
     });
 
     this.app.stage.addChild(this.backgroundLayer);
+
+    const throttledResize = throttle(() => {
+      this.onResize();
+    }, 100);
+
+    this.app.renderer.on('resize', throttledResize);
+    this.onResize();
 
     /* preload textures from film gallery
      * use provided imageSource as fallback
@@ -86,7 +94,8 @@ class LyricsScene {
 
     this.textures.forEach((texture) => {
       texture.source.scaleMode = "linear";
-      texture.source.addressMode = "mirror-repeat";
+      //texture.source.addressMode = "mirror-repeat";
+      texture.baseTexture.wrapMode = PIXI.WRAP_MODES.CLAMP;
     });
     const texture_main = this.textures[0];
 
@@ -115,6 +124,7 @@ class LyricsScene {
     blurFilter[2].strength = 60;
     blurFilter[2].resolution = this.renderResolution;
 
+
     const twist = new TwistFilter({
       angle: -3.5,
       radius: 900,
@@ -124,7 +134,8 @@ class LyricsScene {
       ),
     });
     twist.resolution = this.renderResolution;
-    twist.padding = 200;
+    twist.padding = 100;
+    twist.antialias = "off";
 
     const brightness = new AdjustmentFilter({
       brightness: 0.7,
@@ -172,33 +183,36 @@ class LyricsScene {
         const speedFactor = 0.75; // Movement speed multiplier
         const n = (msPerFrame / 33.333333) * speedFactor;
 
-        this.sprites[0].rotation += 0.003 * n;
-        this.sprites[1].rotation -= 0.008 * n;
+        // handle normal + overlay sprites
+        const allSprites = [...this.sprites, ...this.overlaySprites];
 
-        // Sprite 2 Orbit
-        this.sprites[2].rotation -= 0.006 * n;
-        this.sprites[2].x =
-          this.app.screen.width / 2 +
-          (this.app.screen.width / 4) *
-          Math.cos(this.sprites[2].rotation * 0.75);
-        this.sprites[2].y =
-          this.app.screen.height / 2 +
-          (this.app.screen.width / 4) *
-          Math.sin(this.sprites[2].rotation * 0.75);
+        if (allSprites.length >= 4) {
+          // Rotation
+          allSprites.forEach((sprite, i) => {
+            if (i % 4 == 0) sprite.rotation += 0.003 * n;
+            if (i % 4 == 1) sprite.rotation += 0.008 * n;
+            if (i % 4 == 2) sprite.rotation += 0.006 * n;
+            if (i % 4 == 3) sprite.rotation += 0.004 * n;
+          });
 
-        // Sprite 3 Orbit
-        this.sprites[3].rotation += 0.004 * n;
-        const orbitOffset = (this.app.screen.width / 2) * 0.1;
-        this.sprites[3].x =
-          this.app.screen.width / 2 +
-          orbitOffset +
-          (this.app.screen.width / 4) *
-          Math.cos(this.sprites[3].rotation * 0.75);
-        this.sprites[3].y =
-          this.app.screen.height / 2 +
-          orbitOffset +
-          (this.app.screen.width / 4) *
-          Math.sin(this.sprites[3].rotation * 0.75);
+          // Orbit
+          const updateOrbit = (sprite: PIXI.Sprite, i: number) => {
+            const rad = this.app.screen.width / 4;
+            const cenX = this.app.screen.width / 2;
+            const cenY = this.app.screen.height / 2;
+
+            if (i % 4 == 2) {
+              sprite.x = cenX + rad * Math.cos(sprite.rotation * 0.75);
+              sprite.y = cenY + rad * Math.cos(sprite.rotation * 0.75);
+            } else if (i % 4 == 3) {
+              const offset = (this.app.screen.width / 2) * 0.1;
+              sprite.x = cenX + offset + rad * Math.cos(sprite.rotation * 0.75);
+              sprite.y = cenY + offset + rad * Math.cos(sprite.rotation * 0.75);
+            };
+          };
+
+          allSprites.forEach((sprite, i) => updateOrbit(sprite, i));
+        }
 
         // Keep twist center aligned on resize
         twist.offset.x = this.app.screen.width / 2;
@@ -213,8 +227,8 @@ class LyricsScene {
       this.transitionElapsed += ticker.deltaMS;
       const t = Math.min(this.transitionElapsed / this.transitionDuration, 1);
       //const eased = t * t * (3 - 2 * t);
-      //const eased = t > 0.5 ? 4*Math.pow((t-1),2)+1 : 4*Math.pow(t,2);
-      const eased = t 
+      const eased = t > 0.5 ? 4 * Math.pow((t - 1), 3) + 1 : 4 * Math.pow(t, 3); // cubic in-out
+      //const eased = t  //linear 
       this.overlaySprites.forEach((s) => (s.alpha = eased));
       this.sprites.forEach((s) => (s.alpha = 1 - eased));
       if (t >= 1) {
@@ -264,12 +278,21 @@ class LyricsScene {
   }
 
   private startTextureTransitionTo(index: number) {
-    if (this.isTransitioning || !this.textures[index]) {
-      if (this.isTransitioning) {
-        this.isTransitioning = false;
-      };
-      return
+    // Inside startTextureTransitionTo
+    this.transitionDuration = this.isTransitioning ? 750 : 3000;
+    if (!this.textures[index]) return;
+
+    if (this.isTransitioning) {
+      this.sprites.forEach((s, i) => {
+        s.texture = this.overlaySprites[i].texture;
+        s.alpha = 1;
+
+        const oldOverlay = this.overlaySprites[i];
+        if (oldOverlay.parent) this.backgroundLayer.removeChild(oldOverlay);
+        oldOverlay.destroy();
+      });
     };
+
     this.isTransitioning = true;
     this.transitionElapsed = 0;
     this.currentTextureIndex = index;
@@ -314,6 +337,38 @@ class LyricsScene {
     r.height = r.width;
 
     this.backgroundLayer.addChild(t, s, i, r);
+  }
+
+  private onResize() {
+    const { width, height } = this.app.screen;
+
+    // We use a helper to apply the layout logic to any array of sprites
+    const updateLayout = (spriteArray: PIXI.Sprite[]) => {
+      if (spriteArray.length < 4) return;
+
+      const [t, s, i, r] = spriteArray;
+
+      // Reposition to center
+      t.position.set(width / 2, height / 2);
+      s.position.set(width / 2.5, height / 2.5);
+      i.position.set(width / 2, height / 2);
+      r.position.set(width / 2, height / 2);
+
+      // Rescale based on new width
+      t.width = width * 1.25;
+      t.height = t.width;
+      s.width = width * 0.8;
+      s.height = s.width;
+      i.width = width * 0.5;
+      i.height = i.width;
+      r.width = width * 0.25;
+      r.height = r.width;
+    };
+
+    updateLayout(this.sprites);
+    if (this.overlaySprites.length > 0) {
+      updateLayout(this.overlaySprites);
+    }
   }
 }
 
