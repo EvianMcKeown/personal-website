@@ -21,7 +21,7 @@ class LyricsScene {
 
   // vars associated with sprite texture transitions
   private sprites: PIXI.Sprite[] = [];
-  private overlaySprites!: PIXI.Sprite[] = [];
+  private overlaySprites: PIXI.Sprite[] = [];
   private textures: PIXI.Texture[] = [];
   private currentTextureIndex: number = 0;
   private isTransitioning: boolean = false;
@@ -166,7 +166,7 @@ class LyricsScene {
     colorMatrix.resolution = this.renderResolution;
     colorMatrix.enabled = true;
     // Animation Loop
-    let o = this.sprites.map((h) => h.rotation);
+    // let o = this.sprites.map((h) => h.rotation);
 
     const targetFPS = 15;
     const msPerFrame = 1000 / targetFPS;
