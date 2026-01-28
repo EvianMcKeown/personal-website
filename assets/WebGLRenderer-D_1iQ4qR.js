@@ -1,0 +1,1 @@
+import{p as e}from"./index-B-moPelK.js";export{e as WebGLRenderer};
