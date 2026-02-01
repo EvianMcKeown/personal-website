@@ -6,31 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evian McKeown — About Me</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.css">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    borderRadius: { 'bubble': '24px', 'bubbleinner': '16px' },
-                    colors: { 'soft-bg': '#fdfaf5', 'accent-purple': '#a29bfe' }
-                }
-            }
-        }
-    </script>
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap');
 
         body {
-            font-family: 'Quicksand', sans-serif;
+            font-family: 'Inter', sans-serif;
+            font-feature-settings: 'liga' 1, 'calt' 1;
+            /* fix for Chrome */
             scroll-behavior: smooth;
             margin: 0;
             background: #000;
             /* Allow scrolling over the fixed background */
             overflow-x: hidden;
             overflow-y: auto;
+        }
+
+        @supports (font-variation-settings: normal) {
+            :root {
+                font-family: InterVariable, sans-serif;
+            }
         }
 
         canvas#canvas {
@@ -61,7 +59,8 @@
             --pswp-bg: #fdfaf5;
         }
     </style>
-  <script type="module" crossorigin src="/personal-website/assets/index-DBgB3x_h.js"></script>
+  <script type="module" crossorigin src="/personal-website/assets/index-BNjr9z__.js"></script>
+  <link rel="stylesheet" crossorigin href="/personal-website/assets/index-DmpU20AK.css">
 </head>
 
 <body class="text-slate-900 p-6 md:p-12">
