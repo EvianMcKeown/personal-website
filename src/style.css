@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+@theme {
+  --radius-bubble: 24px;
+  --radius-bubbleinner: 16px;
+
+  --color-soft-bg: #fdfaf5;
+}
