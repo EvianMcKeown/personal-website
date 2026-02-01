@@ -128,7 +128,7 @@ class LyricsScene {
         this.app.screen.height / 2,
       ),
     });
-    console.log(this.app.screen.width);
+    console.log("screen width:" + this.app.screen.width);
     twist.resolution = this.renderResolution;
     twist.padding = 100;
     twist.antialias = "off";
