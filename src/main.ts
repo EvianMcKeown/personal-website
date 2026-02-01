@@ -95,13 +95,9 @@ class LyricsScene {
     this.textures.forEach((texture) => {
       texture.source.scaleMode = "linear";
       //texture.source.addressMode = "mirror-repeat";
-      texture.baseTexture.wrapMode = PIXI.WRAP_MODES.CLAMP;
+      texture.source.addressMode = "clamp-to-edge";
     });
     const texture_main = this.textures[0];
-
-    //texture_main.source.mipmaps = false;
-    //texture_main.source.scaleMode = 'linear';
-    //texture_main.source.addressMode = 'mirror-repeat';
 
     this.sprites = Array(4)
       .fill(null)
