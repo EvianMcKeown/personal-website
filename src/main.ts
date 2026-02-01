@@ -1,6 +1,6 @@
 /* Based on implementation from https://www.aadishv.dev/music -
     specifically https://github.com/aadishv/html-music/blob/4ef618ea2638a0c435d23f182f7aa10e30757ef6/bundle.ts
-    updated for PIXI v8 and fps control introduced. */
+    updated for PIXI v8 and fps control */
 
 import * as PIXI from "pixi.js";
 import { TwistFilter, KawaseBlurFilter, AdjustmentFilter } from "pixi-filters";
@@ -37,7 +37,7 @@ class LyricsScene {
   async init(canvas: HTMLCanvasElement, imageSource: string) {
     /**
      * PIXI V8 BREAKING CHANGE
-     * use .init() and await it before accessing app.screen or app.renderer
+     * use .init() and await before accessing app.screen or app.renderer
      */
     await this.app.init({
       canvas: canvas,
