@@ -122,12 +122,13 @@ class LyricsScene {
 
     const twist = new TwistFilter({
       angle: -3.5,
-      radius: 900,
+      radius: this.app.screen.width * 0.5625,
       offset: new PIXI.Point(
         this.app.screen.width / 2,
         this.app.screen.height / 2,
       ),
     });
+    console.log(this.app.screen.width);
     twist.resolution = this.renderResolution;
     twist.padding = 100;
     twist.antialias = "off";
@@ -218,6 +219,7 @@ class LyricsScene {
         // Keep twist center aligned on resize
         twist.offset.x = this.app.screen.width / 2;
         twist.offset.y = this.app.screen.height / 2;
+        twist.radius = this.app.screen.width * 0.5625;
       }
     });
 
