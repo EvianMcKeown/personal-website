@@ -94,7 +94,6 @@ class LyricsScene {
 
     this.textures.forEach((texture) => {
       texture.source.scaleMode = "linear";
-      //texture.source.addressMode = "mirror-repeat";
       texture.source.addressMode = "clamp-to-edge";
     });
     const texture_main = this.textures[0];
@@ -193,7 +192,13 @@ class LyricsScene {
 
           // Orbit
           const updateOrbit = (sprite: PIXI.Sprite, i: number) => {
-            const rad = this.app.screen.width / 4;
+            var rad= -1 ;
+            if (this.app.screen.width >= this.app.screen.height) {
+              rad = this.app.screen.width / 4;
+            } else {
+              rad = this.app.screen.height / 4;
+            }
+            rad = this.app.screen.width / 4;
             const cenX = this.app.screen.width / 2;
             const cenY = this.app.screen.height / 2;
 
