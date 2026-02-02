@@ -1,4 +1,9 @@
 # Personal Portfolio Website
+<p align="center">
+  <a href="https://evianmckeown.github.io">
+    <img src="https://github.com/user-attachments/assets/8c2e1888-e7fd-480d-913f-6d5f83c30e02" alt="GPU-accelerated PixiJS animated background preview" />
+  </a>
+</p>
 
 This repository contains the source code for my personal portfolio website — a static site designed to showcase my projects, technical skills, and experience as a computer science graduate.
 
