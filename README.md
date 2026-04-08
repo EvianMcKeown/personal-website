@@ -1,6 +1,6 @@
 # Personal Portfolio Website
 <p align="center">
-  <a href="https://evianmckeown.github.io">
+  <a href="https://evianmckeown.github.io/personal-website/">
     <img src="https://github.com/user-attachments/assets/8c2e1888-e7fd-480d-913f-6d5f83c30e02" alt="GPU-accelerated PixiJS animated background preview" />
   </a>
 </p>
