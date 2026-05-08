@@ -1,0 +1,1 @@
+import{f as e}from"./index-SiPq0LBV.js";export{e as WebGPURenderer};
