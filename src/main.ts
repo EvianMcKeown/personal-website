@@ -29,6 +29,9 @@ class LyricsScene {
   private transitionDuration: number = 5000; // in milliseconds
   private renderResolution: number = 0.2;
 
+  // Transition Queue
+  private pendingTextureIndex: number | null = null;
+
   constructor() {
     this.app = new PIXI.Application();
     this.backgroundLayer = new PIXI.Container();
@@ -245,6 +248,13 @@ class LyricsScene {
         this.overlaySprites = [];
         this.isTransitioning = false;
         this.transitionElapsed = 0;
+
+        // if transition is queud, start it
+        if (this.pendingTextureIndex !== null) {
+          const nextIndex = this.pendingTextureIndex;
+          this.pendingTextureIndex = null;
+          this._startTransition(nextIndex);
+        }
       }
     });
 
@@ -265,11 +275,17 @@ class LyricsScene {
       return idx;
     }
 
-    let pending = -1;
+    
     const onscroll = () => {
       const idx = chooseClosestIndex();
-      if (idx !== this.currentTextureIndex && idx !== pending) {
-        pending = idx;
+
+      // if we're already at/transitioning to this index, cancel any pending
+      if (idx === this.currentTextureIndex){
+        this.pendingTextureIndex = null;
+        return;
+      }
+
+      if (idx !== this.pendingTextureIndex) {
         this.startTextureTransitionTo(idx);
       }
     };
@@ -280,27 +296,24 @@ class LyricsScene {
     onscroll();
   }
 
-  private startTextureTransitionTo(index: number) {
-    // Inside startTextureTransitionTo
-    this.transitionDuration = this.isTransitioning ? 750 : 3000;
+  private startTextureTransitionTo(index: number){
+    if (!this.isTransitioning){
+      this._startTransition(index);
+    } else {
+      // queue new index
+      this.pendingTextureIndex = index;
+    }
+  }
+
+  private _startTransition(index: number) {
     if (!this.textures[index]) return;
 
-    if (this.isTransitioning) {
-      this.sprites.forEach((s, i) => {
-        s.texture = this.overlaySprites[i].texture;
-        s.alpha = 1;
-
-        const oldOverlay = this.overlaySprites[i];
-        if (oldOverlay.parent) this.backgroundLayer.removeChild(oldOverlay);
-        oldOverlay.destroy();
-      });
-    };
-
+    this.transitionDuration = 3000;
     this.isTransitioning = true;
     this.transitionElapsed = 0;
     this.currentTextureIndex = index;
 
-    // create overlay sprites
+    // create overlay sprites with new texture
     this.overlaySprites = this.sprites.map((s) => {
       const ns = new PIXI.Sprite(this.textures[index]);
       ns.anchor.set(s.anchor.x, s.anchor.y);
@@ -312,6 +325,7 @@ class LyricsScene {
       ns.alpha = 0;
       return ns;
     });
+    
     // add overlay above existing sprites
     this.overlaySprites.forEach((s) => this.backgroundLayer.addChild(s));
   }
