@@ -1,0 +1,1 @@
+import{p as e}from"./index-r5ekwhm0.js";export{e as WebGLRenderer};
