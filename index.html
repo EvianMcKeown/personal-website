@@ -5,20 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Evian McKeown — About Me</title>
-    <meta name="theme-color" content="#b76738">
+    <meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.css">
     <link rel="preconnect" href="https://rsms.me/">
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 
     <style>
+        html {
+            background: #fff;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             font-feature-settings: 'liga' 1, 'calt' 1;
             /* fix for Chrome */
             scroll-behavior: smooth;
             margin: 0;
-            background: #5a8172;
             /* Allow scrolling over the fixed background */
             overflow-x: hidden;
             overflow-y: auto;
@@ -30,21 +32,29 @@
             }
         }
 
-        canvas#canvas {
+        canvas#canvas,
+        #backdrop {
             display: block;
             position: fixed;
             /* Keeps background in place while you scroll */
             top: 0;
             left: 0;
-            right: 0;
             width: 100vw;
             width: 100dvw;
             height: 100vh;
-            height: 100dvh;
-            z-index: -1;
+            height: 100lvh;
+        }
+
+        canvas#canvas {
             /* Sits behind the HTML content */
+            z-index: -1;
             opacity: 0;
             transition: opacity 800ms ease-out;
+        }
+
+        #backdrop {
+            z-index: -2;
+            background: #5a8172;
         }
 
         canvas#canvas.is-ready {
@@ -71,11 +81,12 @@
             --pswp-bg: #fdfaf5;
         }
     </style>
-  <script type="module" crossorigin src="/personal-website/assets/index-BIu4Yk_l.js"></script>
-  <link rel="stylesheet" crossorigin href="/personal-website/assets/index-Ckfgfn1o.css">
+  <script type="module" crossorigin src="/personal-website/assets/index-BsDBfv4Q.js"></script>
+  <link rel="stylesheet" crossorigin href="/personal-website/assets/index-lHxcIpny.css">
 </head>
 
 <body class="text-slate-900 p-6 md:p-12">
+    <div id="backdrop"></div>
     <canvas id="canvas"></canvas>
 
     <div class="max-w-4xl mx-auto relative z-10">
