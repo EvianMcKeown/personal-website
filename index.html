@@ -42,6 +42,18 @@
             height: 120dvh;
             z-index: -1;
             /* Sits behind the HTML content */
+            opacity: 0;
+            transition: opacity 800ms ease-out;
+        }
+
+        canvas#canvas.is-ready {
+            opacity: 1;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            canvas#canvas {
+                transition: none;
+            }
         }
 
         .bubble-card {
@@ -58,7 +70,7 @@
             --pswp-bg: #fdfaf5;
         }
     </style>
-  <script type="module" crossorigin src="/personal-website/assets/index-r5ekwhm0.js"></script>
+  <script type="module" crossorigin src="/personal-website/assets/index-DoEmafEi.js"></script>
   <link rel="stylesheet" crossorigin href="/personal-website/assets/index-Ckfgfn1o.css">
 </head>
 
