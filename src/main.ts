@@ -33,7 +33,7 @@ class LyricsScene {
   private isTransitioning: boolean = false;
   private transitionElapsed: number = 0;
   private transitionDuration: number = 5000; // in milliseconds
-  private renderResolution: number = 0.2;
+  private renderResolution: number = 0.1;
   private filterPadding: number = 0;
   private twist: TwistFilter | null = null;
   private filterStack: PIXI.Filter[] = [];
@@ -97,9 +97,19 @@ class LyricsScene {
 
     const loadInto = async (index: number) => {
       try {
-        const texture: PIXI.Texture = await PIXI.Assets.load(sources[index]);
-        texture.source.scaleMode = "linear";
-        texture.source.addressMode = "clamp-to-edge";
+        const texture: PIXI.Texture = await PIXI.Assets.load({
+          src: sources[index],
+          data: { autoGenerateMipmaps: true },
+        });
+        const source = texture.source;
+        if (!source.autoGenerateMipmaps || source.mipLevelCount < 2) {
+          source.autoGenerateMipmaps = true;
+          source.mipLevelCount =
+            Math.floor(Math.log2(Math.max(source.pixelWidth, source.pixelHeight))) + 1;
+          source.updateMipmaps();
+        }
+        source.scaleMode = "linear";
+        source.addressMode = "clamp-to-edge";
         this.textures[index] = texture;
         return texture;
       } catch (err) {
@@ -227,7 +237,6 @@ class LyricsScene {
       const eased = t > 0.5 ? 4 * Math.pow((t - 1), 3) + 1 : 4 * Math.pow(t, 3); // cubic in-out
       //const eased = t  //linear 
       this.overlaySprites.forEach((s) => (s.alpha = eased));
-      this.sprites.forEach((s) => (s.alpha = 1 - eased));
       if (t >= 1) {
         // remove old sprites
         this.sprites.forEach((s) => {
@@ -311,7 +320,7 @@ class LyricsScene {
     if (!this.textures[index]) return;
 
     this.app.ticker.maxFPS = TRANSITION_FPS;
-    this.transitionDuration = 3000;
+    this.transitionDuration = 1500;
     this.isTransitioning = true;
     this.transitionElapsed = 0;
     this.currentTextureIndex = index;
