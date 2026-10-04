@@ -44,11 +44,11 @@ class LyricsScene {
      */
     await this.app.init({
       canvas: canvas,
-      resizeTo: window,
+      resizeTo: canvas,
       backgroundAlpha: 1,
       backgroundColor: 0x5a8172,
       resolution: 1,
-      autoDensity: true,
+      autoDensity: false,
       antialias: false,
       powerPreference: "low-power",
     });
