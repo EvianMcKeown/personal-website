@@ -342,21 +342,25 @@ class LyricsScene {
     this.overlaySprites.forEach((s) => this.backgroundLayer.addChild(s));
   }
 
-  private addSpritesToContainer(sprites: PIXI.Sprite[]) {
+  private layoutSprites(sprites: PIXI.Sprite[]) {
+    if (sprites.length < 4) return;
+
     const [t, s, i, r] = sprites;
     const { width, height } = this.app.screen;
 
-    sprites.forEach((sprite) => sprite.anchor.set(0.5, 0.5));
-    sprites.forEach((sprite) => (sprite.roundPixels = true));
+    // A centred square only covers the screen at *every* rotation if its side is
+    // at least the diagonal — sizing off width alone leaves gaps in portrait.
+    const cover = Math.hypot(width, height) * 1.1;
 
-    // Exact positions from your source
+    // Positions
     t.position.set(width / 2, height / 2);
     s.position.set(width / 2.5, height / 2.5);
     i.position.set(width / 2, height / 2);
     r.position.set(width / 2, height / 2);
 
-    // Exact scales from your source
-    t.width = width * 1.25;
+    // Scales: base layer keyed to the diagonal for coverage, decorative layers
+    // stay keyed to width so the composition is unchanged.
+    t.width = cover;
     t.height = t.width;
     s.width = width * 0.8;
     s.height = s.width;
@@ -364,39 +368,23 @@ class LyricsScene {
     i.height = i.width;
     r.width = width * 0.25;
     r.height = r.width;
+  }
+
+  private addSpritesToContainer(sprites: PIXI.Sprite[]) {
+    const [t, s, i, r] = sprites;
+
+    sprites.forEach((sprite) => sprite.anchor.set(0.5, 0.5));
+    sprites.forEach((sprite) => (sprite.roundPixels = true));
+
+    this.layoutSprites(sprites);
 
     this.backgroundLayer.addChild(t, s, i, r);
   }
 
   private onResize() {
-    const { width, height } = this.app.screen;
-
-    // We use a helper to apply the layout logic to any array of sprites
-    const updateLayout = (spriteArray: PIXI.Sprite[]) => {
-      if (spriteArray.length < 4) return;
-
-      const [t, s, i, r] = spriteArray;
-
-      // Reposition to center
-      t.position.set(width / 2, height / 2);
-      s.position.set(width / 2.5, height / 2.5);
-      i.position.set(width / 2, height / 2);
-      r.position.set(width / 2, height / 2);
-
-      // Rescale based on new width
-      t.width = width * 1.25;
-      t.height = t.width;
-      s.width = width * 0.8;
-      s.height = s.width;
-      i.width = width * 0.5;
-      i.height = i.width;
-      r.width = width * 0.25;
-      r.height = r.width;
-    };
-
-    updateLayout(this.sprites);
+    this.layoutSprites(this.sprites);
     if (this.overlaySprites.length > 0) {
-      updateLayout(this.overlaySprites);
+      this.layoutSprites(this.overlaySprites);
     }
   }
 }
