@@ -17,6 +17,7 @@ lightbox.init();
 
 // 2. Background
 const TARGET_FPS = 15;
+const TRANSITION_FPS = 30;
 const TWIST_ANGLE = -3.5;
 const TWIST_RADIUS_RATIO = 0.5625;
 
@@ -244,6 +245,8 @@ class LyricsScene {
           const nextIndex = this.pendingTextureIndex;
           this.pendingTextureIndex = null;
           this._startTransition(nextIndex);
+        } else {
+          this.app.ticker.maxFPS = TARGET_FPS;
         }
       }
     });
@@ -307,6 +310,7 @@ class LyricsScene {
   private _startTransition(index: number) {
     if (!this.textures[index]) return;
 
+    this.app.ticker.maxFPS = TRANSITION_FPS;
     this.transitionDuration = 3000;
     this.isTransitioning = true;
     this.transitionElapsed = 0;
