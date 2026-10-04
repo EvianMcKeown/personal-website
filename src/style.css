@@ -1,8 +1,561 @@
 @import "tailwindcss";
 
 @theme {
-  --radius-bubble: 24px;
-  --radius-bubbleinner: 16px;
+    --color-ground: #11110f;
+    --color-cream: #f2eee6;
+    --color-accent: #b51d24;
 
-  --color-soft-bg: #fdfaf5;
+    --font-display: "Bricolage Grotesque", "Inter", sans-serif;
+    --font-sans: "InterVariable", "Inter", sans-serif;
+}
+
+/* ---- system tokens ------------------------------------------------------ */
+
+:root {
+    /* --surface / --ink are set per band by the .surface-* classes and
+       inherited by everything inside; --rule follows --ink automatically. */
+    --surface: var(--color-ground);
+    --ink: var(--color-cream);
+
+    --rule-w: 2px;
+    --rule: var(--rule-w) solid var(--ink);
+
+    --content-max: 96rem;
+    --cell-pad: clamp(1.75rem, 4vw, 4.5rem);
+
+    --title-size: clamp(2.6rem, 4.8vw, 5rem);
+    --cell-title-size: clamp(1.55rem, 2.25vw, 2.5rem);
+    --body-size: clamp(1.05rem, 1.1vw, 1.35rem);
+    --label-size: clamp(0.7rem, 0.8vw, 0.8rem);
+}
+
+.surface-dark {
+    --surface: var(--color-ground);
+    --ink: var(--color-cream);
+    color-scheme: dark;
+}
+
+.surface-light {
+    --surface: var(--color-cream);
+    --ink: var(--color-ground);
+    color-scheme: light;
+}
+
+.surface-accent {
+    --surface: var(--color-accent);
+    --ink: #fff;
+    color-scheme: dark;
+}
+
+/* ---- bands and cells ---------------------------------------------------- */
+
+.band {
+    background: var(--surface);
+    color: var(--ink);
+    /* Clears the sticky header when an in-page anchor is followed. */
+    scroll-margin-top: clamp(3.5rem, 6vw, 5rem);
+}
+
+.band {
+    border-top: var(--rule);
+}
+
+/* The header already carries a bottom rule, and the footer is a sibling of
+   <main> rather than of the bands, so anchor the exception to the first band. */
+#main > .band:first-child {
+    border-top: 0;
+}
+
+.band-inner {
+    max-width: var(--content-max);
+    margin-inline: auto;
+}
+
+/* Cell rules are the 2px gap showing through from the grid's ink-coloured
+   background, so they survive columns collapsing at narrow widths. */
+.band-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--rule-w);
+    background: var(--ink);
+}
+
+@media (min-width: 48rem) {
+    .band-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .band-grid--thirds {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.cell {
+    background: var(--surface);
+    padding: var(--cell-pad);
+    min-width: 0;
+}
+
+.span-all {
+    grid-column: 1 / -1;
+}
+
+/* Distribute a cell's free vertical space between its paragraphs instead of
+   leaving it all at the bottom, so copy fills the height its row partner sets.
+   `gap` is the minimum spacing; `space-between` adds whatever is left over, so
+   when the copy is taller than the partner nothing changes. */
+.cell--fill {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1em;
+}
+
+/* Beats `.prose p` on specificity rather than source order: the distributed
+   space is the only gap, so the paragraphs' own margins must go. */
+.cell--fill.prose > p {
+    margin: 0;
+}
+
+/* A work entry: heading and copy sit at the top, while the tag row and
+   anything after it (the links) are pushed to the cell's bottom edge, so they
+   line up across a row however much copy each entry carries. The padding is
+   the minimum gap for when an entry is tall enough to fill its cell. */
+.cell--entry {
+    display: flex;
+    flex-direction: column;
+}
+
+.cell--entry > .tag-row {
+    margin-top: auto;
+    padding-top: 1.5rem;
+}
+
+/* A band whose cell count is odd leaves a hole in the last row, and the hole
+   shows the grid's ink background. A filler cell closes it, but only once the
+   grid actually has two columns. */
+.cell--empty {
+    display: none;
+}
+
+@media (min-width: 48rem) {
+    .cell--empty {
+        display: block;
+    }
+}
+
+.cell--media {
+    background: var(--surface);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Two columns inside a single cell, divided by a rule rather than by the grid
+   gap. For content that belongs under one heading but reads side by side. */
+.cell-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--cell-pad);
+    margin-top: 1.75rem;
+}
+
+@media (min-width: 48rem) {
+    .cell-split {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 0;
+    }
+
+    .cell-split > * + * {
+        border-left: var(--rule);
+        padding-left: var(--cell-pad);
+    }
+}
+
+/* A featured media cell spanning the full band: the aspect ratio sets its
+   height, so the min-height that sizes half-width media cells must go. */
+.cell--wide {
+    aspect-ratio: 16 / 9;
+}
+
+.cell--wide img,
+.cell--wide object,
+.cell--wide iframe {
+    min-height: 0;
+}
+
+/* Full-bleed square portrait. The source is 2075px square, so a half-width
+   cell can be filled without upscaling, and a 1:1 ratio means no crop at all. */
+.cell--portrait {
+    padding: 0;
+    overflow: hidden;
+}
+
+.cell--portrait img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.cell--media img,
+.cell--media object,
+.cell--media iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: clamp(16rem, 32vw, 30rem);
+    object-fit: cover;
+    border: 0;
+}
+
+/* ---- typography --------------------------------------------------------- */
+
+.title {
+    font-family: var(--font-display);
+    font-size: var(--title-size);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+    max-width: 18ch;
+    text-wrap: balance;
+    margin: 0;
+}
+
+.cell-title {
+    font-family: var(--font-display);
+    font-size: var(--cell-title-size);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0;
+}
+
+.prose {
+    font-size: var(--body-size);
+    line-height: 1.5;
+    text-wrap: pretty;
+}
+
+.prose p {
+    max-width: 60ch;
+    margin: 0 0 1em;
+}
+
+.prose p:last-child {
+    margin-bottom: 0;
+}
+
+.label {
+    font-family: var(--font-display);
+    font-size: var(--label-size);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    line-height: 1.2;
+}
+
+.list {
+    font-size: var(--body-size);
+    line-height: 1.5;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5em;
+    max-width: 60ch;
+}
+
+.list > li {
+    padding-left: 1.4em;
+    position: relative;
+}
+
+.list > li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 0.4em;
+    height: 0.4em;
+    background: currentColor;
+}
+
+/* ---- links, tags, buttons ----------------------------------------------- */
+
+a {
+    color: inherit;
+}
+
+.link {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+}
+
+.link:hover,
+.link:focus-visible {
+    text-decoration-thickness: 2px;
+}
+
+/* Current section in the header nav; set from JS via aria-current. */
+.site-nav .link[aria-current] {
+    text-decoration-thickness: 3px;
+    text-underline-offset: 0.22em;
+}
+
+.tag {
+    font-family: var(--font-display);
+    font-size: var(--label-size);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border: 1px solid var(--ink);
+    padding: 0.3em 0.6em;
+    white-space: nowrap;
+}
+
+/* Filled rather than outlined: the accent is the one colour that does not come
+   from --surface/--ink, so a tag using it has to carry its own ink (white holds
+   6.6:1 on the accent) instead of inheriting the band's. */
+.tag--accent {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+
+.tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.button {
+    font-family: var(--font-display);
+    font-size: var(--label-size);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: var(--rule);
+    padding: 0.6em 1.1em;
+    background: 0 0;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.button:hover:not(:disabled),
+.button:focus-visible {
+    background: var(--ink);
+    color: var(--surface);
+}
+
+.button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+:focus-visible {
+    outline: var(--rule-w) solid var(--ink);
+    outline-offset: 3px;
+}
+
+.skip-link {
+    position: absolute;
+    left: -9999px;
+}
+
+.skip-link:focus {
+    position: fixed;
+    left: 1rem;
+    top: 1rem;
+    z-index: 100;
+    background: var(--color-cream);
+    color: var(--color-ground);
+    padding: 0.6em 1em;
+}
+
+/* ---- header ------------------------------------------------------------- */
+
+.site-header {
+    /* Header type is sized on its own token, not --label-size, which is shared
+       with the tags, film metadata and buttons. */
+    --header-label-size: clamp(0.8rem, 0.95vw, 1rem);
+    --header-pad-y: clamp(1.1rem, 1.5vw, 1.6rem);
+
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--surface);
+    color: var(--ink);
+    border-bottom: var(--rule);
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+.site-header-inner {
+    max-width: var(--content-max);
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: var(--header-pad-y) clamp(1rem, 4vw, 4.5rem);
+}
+
+.site-header .label {
+    font-size: var(--header-label-size);
+}
+
+.site-wordmark {
+    font-size: calc(var(--header-label-size) * 1.3);
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+}
+
+/* 512px pixel art: nearest-neighbour keeps the pixel grid crisp at any size. */
+.site-avatar {
+    width: calc(var(--header-label-size) * 2.6);
+    height: auto;
+    image-rendering: pixelated;
+    border: 1px solid var(--ink);
+}
+
+.site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(0.75rem, 2vw, 1.75rem);
+}
+
+/* ---- hero --------------------------------------------------------------- */
+
+.hero {
+    display: grid;
+    align-content: space-between;
+    gap: clamp(3rem, 10vw, 9rem);
+    min-height: min(42rem, 78svh);
+    padding: var(--cell-pad);
+}
+
+.hero-headline {
+    font-family: var(--font-display);
+    /* The name is the largest thing on the site; it is short, so it can run
+       much bigger than a sentence-length headline could. */
+    font-size: clamp(3rem, 11vw, 9rem);
+    font-weight: 400;
+    letter-spacing: -0.045em;
+    line-height: 0.9;
+    max-width: 14ch;
+    text-wrap: balance;
+    margin: 0;
+}
+
+.hero-lead {
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 2.4vw, 2.4rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    max-width: 32ch;
+    text-wrap: pretty;
+    margin: 0 0 clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.hero-statement {
+    display: grid;
+    /* Between groups. Within a group the gap is much tighter, so the five
+       lines read as three categories -- credential, status, contact -- rather
+       than one undifferentiated list. */
+    gap: 1.15em;
+    font-size: clamp(1.05rem, 1.5vw, 1.6rem);
+    line-height: 1.35;
+    /* Wide enough for the degree line to set on one line; each span is its own
+       block, so `balance` splits anything that does wrap evenly. */
+    max-width: 50ch;
+    text-wrap: balance;
+    margin: 0;
+}
+
+.hero-group {
+    display: grid;
+    gap: 0.25em;
+}
+
+/* ---- film rail ---------------------------------------------------------- */
+
+.rail {
+    --rail-card: clamp(15rem, 62vw, 26rem);
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline proximity;
+    scrollbar-width: none;
+    border-top: var(--rule);
+}
+
+.rail::-webkit-scrollbar {
+    display: none;
+}
+
+.rail-item {
+    flex: 0 0 auto;
+    width: var(--rail-card);
+    scroll-snap-align: start;
+    padding: clamp(1rem, 2vw, 1.75rem);
+    display: grid;
+    gap: 0.9rem;
+}
+
+/* Mixed orientations in one rail: the portrait card is narrowed by exactly the
+   ratio between 3:2 and 2:3 (2.25) so every image comes out the same height
+   and the strip stays level. */
+.rail-item--portrait {
+    width: calc(var(--rail-card) / 2.25);
+    min-width: 9rem;
+}
+
+.rail-item + .rail-item {
+    border-left: var(--rule);
+}
+
+.rail-item img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+.rail-item--portrait img {
+    aspect-ratio: 2 / 3;
+}
+
+.rail-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.rail-meta > :last-child {
+    text-align: right;
+}
+
+.rail-item--portrait .rail-meta {
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.rail-item--portrait .rail-meta > :last-child {
+    text-align: left;
+}
+
+.rail-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ---- photoswipe --------------------------------------------------------- */
+
+.pswp {
+    --pswp-bg: #11110f;
 }
