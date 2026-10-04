@@ -46,7 +46,7 @@ class LyricsScene {
       canvas: canvas,
       resizeTo: window,
       backgroundAlpha: 1,
-      backgroundColor: '000000',
+      backgroundColor: 0x5a8172,
       resolution: 1,
       autoDensity: true,
       antialias: false,
