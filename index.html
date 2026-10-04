@@ -43,6 +43,18 @@
             height: 120dvh;
             z-index: -1;
             /* Sits behind the HTML content */
+            opacity: 0;
+            transition: opacity 800ms ease-out;
+        }
+
+        canvas#canvas.is-ready {
+            opacity: 1;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            canvas#canvas {
+                transition: none;
+            }
         }
 
         .bubble-card {
