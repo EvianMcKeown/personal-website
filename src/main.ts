@@ -446,3 +446,41 @@ window.addEventListener("load", async () => {
   }
 });
 
+// 4. SECTION TITLES
+const SITE_NAME = "Evian McKeown";
+
+function setupSectionTitles() {
+  const sections = Array.from(
+    document.querySelectorAll("[data-page-title]"),
+  ) as HTMLElement[];
+  if (!sections.length) return;
+
+  const visible = new Set<HTMLElement>();
+
+  const apply = () => {
+    for (let i = sections.length - 1; i >= 0; i--) {
+      const name = sections[i].dataset.pageTitle;
+      if (!visible.has(sections[i]) || !name) continue;
+      const next = `${name} • ${SITE_NAME}`;
+      if (document.title !== next) document.title = next;
+      return;
+    }
+  };
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const el = entry.target as HTMLElement;
+        if (entry.isIntersecting) visible.add(el);
+        else visible.delete(el);
+      });
+      apply();
+    },
+    { rootMargin: "0px 0px -60% 0px" },
+  );
+
+  sections.forEach((el) => observer.observe(el));
+}
+
+setupSectionTitles();
+
