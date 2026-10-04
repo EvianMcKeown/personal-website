@@ -5,6 +5,7 @@
 import * as PIXI from "pixi.js";
 import { TwistFilter, KawaseBlurFilter, AdjustmentFilter } from "pixi-filters";
 import PhotoSwipeLightbox from "photoswipe/lightbox";
+import "photoswipe/style.css";
 
 // 1. PHOTOSWIPE INITIALIZATION
 const lightbox = new PhotoSwipeLightbox({
@@ -15,6 +16,10 @@ const lightbox = new PhotoSwipeLightbox({
 lightbox.init();
 
 // 2. Background
+const TARGET_FPS = 15;
+const TWIST_ANGLE = -3.5;
+const TWIST_RADIUS_RATIO = 0.5625;
+
 class LyricsScene {
   private app: PIXI.Application;
   private backgroundLayer: PIXI.Container;
@@ -28,9 +33,16 @@ class LyricsScene {
   private transitionElapsed: number = 0;
   private transitionDuration: number = 5000; // in milliseconds
   private renderResolution: number = 0.2;
+  private filterPadding: number = 0;
+  private twist: TwistFilter | null = null;
+  private filterStack: PIXI.Filter[] = [];
 
   // Transition Queue
   private pendingTextureIndex: number | null = null;
+
+  private reduceMotion: boolean = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
 
   constructor() {
     this.app = new PIXI.Application();
@@ -46,12 +58,15 @@ class LyricsScene {
       canvas: canvas,
       resizeTo: canvas,
       backgroundAlpha: 1,
-      backgroundColor: 0x5a8172,
+      backgroundColor: 0x000000,
       resolution: 1,
       autoDensity: false,
       antialias: false,
       powerPreference: "low-power",
+      preference: "webgl",
     });
+
+    this.app.ticker.maxFPS = TARGET_FPS;
 
     this.app.stage.addChild(this.backgroundLayer);
 
@@ -77,29 +92,42 @@ class LyricsScene {
       return url.replace(/(\.[\w\d]+)$/, "-small$1");
     });
 
-    const loaded = await Promise.all(
-      sources.map(async (src) => {
-        try {
-          return await PIXI.Assets.load(src);
-        } catch (err) {
-          console.warn(`Failed to load texture: ${src}`, err);
-          return null;
-        }
-      }),
-    );
-    this.textures = loaded.filter(Boolean) as PIXI.Texture[];
+    this.textures = new Array(sources.length);
 
-    // fallback to single texture if none loaded
-    if (!this.textures.length) {
-      const fallbackTexture = await PIXI.Assets.load(imageSource);
-      this.textures = [fallbackTexture];
+    const loadInto = async (index: number) => {
+      try {
+        const texture: PIXI.Texture = await PIXI.Assets.load(sources[index]);
+        texture.source.scaleMode = "linear";
+        texture.source.addressMode = "clamp-to-edge";
+        this.textures[index] = texture;
+        return texture;
+      } catch (err) {
+        console.warn(`Failed to load texture: ${sources[index]}`, err);
+        return null;
+      }
+    };
+
+    const firstIndex = this.scrollIndex(sources.length);
+    let picked = await loadInto(firstIndex);
+
+    for (let i = 0; i < sources.length && !picked; i++) {
+      if (i !== firstIndex) picked = await loadInto(i);
     }
+    let usedFallback = false;
+    if (!picked) {
+      const fallback: PIXI.Texture = await PIXI.Assets.load(imageSource);
+      this.textures = [fallback];
+      picked = fallback;
+      usedFallback = true;
+    }
+    const texture_main: PIXI.Texture = picked;
+    this.currentTextureIndex = this.textures.indexOf(texture_main);
 
-    this.textures.forEach((texture) => {
-      texture.source.scaleMode = "linear";
-      texture.source.addressMode = "clamp-to-edge";
-    });
-    const texture_main = this.textures[0];
+    if (!usedFallback) {
+      sources.forEach((_, i) => {
+        if (!this.textures[i]) void loadInto(i);
+      });
+    }
 
     this.sprites = Array(4)
       .fill(null)
@@ -108,9 +136,9 @@ class LyricsScene {
 
     // Setup Filters
     const blurFilter = [
-      new KawaseBlurFilter(),
-      new KawaseBlurFilter(),
-      new KawaseBlurFilter(),
+      new KawaseBlurFilter({ clamp: true }),
+      new KawaseBlurFilter({ clamp: true }),
+      new KawaseBlurFilter({ clamp: true }),
     ];
     blurFilter[0].quality = 2;
     blurFilter[0].strength = 10;
@@ -124,105 +152,67 @@ class LyricsScene {
 
 
     const twist = new TwistFilter({
-      angle: -3.5,
-      radius: this.app.screen.width * 0.5625,
+      angle: TWIST_ANGLE,
+      radius: this.app.screen.width * TWIST_RADIUS_RATIO,
       offset: new PIXI.Point(
         this.app.screen.width / 2,
         this.app.screen.height / 2,
       ),
     });
-    console.log("screen width:" + this.app.screen.width);
     twist.resolution = this.renderResolution;
-    twist.padding = 100;
     twist.antialias = "off";
+    this.twist = twist;
 
-    const brightness = new AdjustmentFilter({
-      brightness: 0.7,
-      contrast: 1.7,
-    });
-    brightness.resolution = this.renderResolution;
-
-    const saturate = new AdjustmentFilter({
+    const adjust = new AdjustmentFilter({
       saturation: 2.8,
+      contrast: 1.7,
+      brightness: 0.7,
+      red: 1,
+      green: 252 / 255,
+      blue: 247 / 255,
     });
-    saturate.resolution = this.renderResolution;
-
-    const colorMatrix = new PIXI.ColorMatrixFilter();
-    //
-    //colorMatrix.alpha = 1.9;
+    adjust.resolution = this.renderResolution;
 
     // Apply the filter stack
-    this.backgroundLayer.filters = [
-      saturate,
-      brightness,
-      twist,
-      ...blurFilter,
-      colorMatrix,
-    ];
+    this.filterStack = [adjust, twist, ...blurFilter];
+    this.backgroundLayer.filters = this.filterStack;
     this.backgroundLayer.filterArea = this.app.screen;
 
-    colorMatrix.tint(0xfffcf7, true);
-    colorMatrix.resolution = this.renderResolution;
-    colorMatrix.enabled = true;
-    // Animation Loop
-    // let o = this.sprites.map((h) => h.rotation);
+    this.onResize();
 
-    const targetFPS = 15;
-    const msPerFrame = 1000 / targetFPS;
-    let accumulator = 0;
-
-    // Animation loop
     this.app.ticker.add((ticker) => {
-      // Accumulate the time passed since the last tick
-      accumulator += ticker.deltaMS;
+      const speedFactor = 0.75; // Movement speed multiplier
+      const n = (ticker.deltaMS / 33.333333) * speedFactor;
 
-      // Only update if enough time has passed
-      if (accumulator >= msPerFrame) {
-        accumulator -= msPerFrame;
-        const speedFactor = 0.75; // Movement speed multiplier
-        const n = (msPerFrame / 33.333333) * speedFactor;
+      // handle normal + overlay sprites
+      const allSprites = [...this.sprites, ...this.overlaySprites];
 
-        // handle normal + overlay sprites
-        const allSprites = [...this.sprites, ...this.overlaySprites];
+      if (allSprites.length >= 4) {
+        // Rotation
+        allSprites.forEach((sprite, i) => {
+          if (i % 4 == 0) sprite.rotation += 0.003 * n;
+          if (i % 4 == 1) sprite.rotation += 0.008 * n;
+          if (i % 4 == 2) sprite.rotation += 0.006 * n;
+          if (i % 4 == 3) sprite.rotation += 0.004 * n;
+        });
 
-        if (allSprites.length >= 4) {
-          // Rotation
-          allSprites.forEach((sprite, i) => {
-            if (i % 4 == 0) sprite.rotation += 0.003 * n;
-            if (i % 4 == 1) sprite.rotation += 0.008 * n;
-            if (i % 4 == 2) sprite.rotation += 0.006 * n;
-            if (i % 4 == 3) sprite.rotation += 0.004 * n;
-          });
+        // Orbit
+        const updateOrbit = (sprite: PIXI.Sprite, i: number) => {
+          const rad = this.app.screen.width / 4;
+          const cenX = this.app.screen.width / 2;
+          const cenY = this.app.screen.height / 2;
 
-          // Orbit
-          const updateOrbit = (sprite: PIXI.Sprite, i: number) => {
-            var rad = -1;
-            if (this.app.screen.width >= this.app.screen.height) {
-              rad = this.app.screen.width / 4;
-            } else {
-              rad = this.app.screen.height / 4;
-            }
-            rad = this.app.screen.width / 4;
-            const cenX = this.app.screen.width / 2;
-            const cenY = this.app.screen.height / 2;
+          if (i % 4 == 2) {
+            sprite.x = cenX + rad * Math.cos(sprite.rotation * 0.75);
+            sprite.y = cenY + rad * Math.cos(sprite.rotation * 0.75);
+          } else if (i % 4 == 3) {
+            const offset = (this.app.screen.width / 2) * 0.1;
+            sprite.x = cenX + offset + rad * Math.cos(sprite.rotation * 0.75);
+            sprite.y = cenY + offset + rad * Math.cos(sprite.rotation * 0.75);
+          }
+        };
 
-            if (i % 4 == 2) {
-              sprite.x = cenX + rad * Math.cos(sprite.rotation * 0.75);
-              sprite.y = cenY + rad * Math.cos(sprite.rotation * 0.75);
-            } else if (i % 4 == 3) {
-              const offset = (this.app.screen.width / 2) * 0.1;
-              sprite.x = cenX + offset + rad * Math.cos(sprite.rotation * 0.75);
-              sprite.y = cenY + offset + rad * Math.cos(sprite.rotation * 0.75);
-            };
-          };
-
-          allSprites.forEach((sprite, i) => updateOrbit(sprite, i));
-        }
-
-        // Keep twist center aligned on resize
-        twist.offset.x = this.app.screen.width / 2;
-        twist.offset.y = this.app.screen.height / 2;
-        twist.radius = this.app.screen.width * 0.5625;
+        allSprites.forEach((sprite, i) => updateOrbit(sprite, i));
       }
     });
 
@@ -260,10 +250,23 @@ class LyricsScene {
 
     // listen for scroll
     this.setupScrollBasedTextureSwap();
+
+    if (this.reduceMotion) {
+      this.app.render();
+      this.app.ticker.stop();
+    }
   }
 
   public renderOnce() {
     this.app.render();
+  }
+
+  private scrollIndex(count: number) {
+    const docElm = document.documentElement;
+    const range = docElm.scrollHeight - docElm.clientHeight;
+    const pos =
+      range > 0 ? (document.body.scrollTop || docElm.scrollTop) / range : 0;
+    return Math.min(Math.round(pos * count), count - 1);
   }
 
   private setupScrollBasedTextureSwap() {
@@ -272,15 +275,8 @@ class LyricsScene {
     ) as HTMLAnchorElement[];
     if (!anchors.length || !this.textures.length) return;
 
-    const chooseClosestIndex = () => {
-      const docElm = document.documentElement;
-      const range = docElm.scrollHeight - docElm.clientHeight;
-      const pos = range > 0 ? (document.body.scrollTop || docElm.scrollTop) / range : 0;
-      return Math.min(Math.round(pos * anchors.length), anchors.length - 1);
-    };
-
     const onscroll = () => {
-      const idx = chooseClosestIndex();
+      const idx = this.scrollIndex(anchors.length);
 
       // if we're already at/transitioning to this index, cancel any pending
       if (idx === this.currentTextureIndex) {
@@ -293,19 +289,10 @@ class LyricsScene {
       }
     };
 
-    // snap to the scroll-matched texture on load rather than crossfading into it,
-    // so the fade-in reveals the correct image already in place
-    const initialIdx = chooseClosestIndex();
-    if (this.textures[initialIdx]) {
-      this.currentTextureIndex = initialIdx;
-      this.sprites.forEach((s) => (s.texture = this.textures[initialIdx]));
-      // re-apply sizing: in Pixi v8 width/height resolve to a scale derived from
-      // the texture's pixel dimensions, so swapping textures can change render size
-      this.onResize();
+    if (!this.reduceMotion) {
+      // throttle scroll position check to every 100ms
+      window.addEventListener("scroll", throttle(onscroll, 100));
     }
-
-    // throttle scroll position check to every 100ms
-    window.addEventListener("scroll", throttle(onscroll, 100));
   }
 
   private startTextureTransitionTo(index: number) {
@@ -348,18 +335,14 @@ class LyricsScene {
     const [t, s, i, r] = sprites;
     const { width, height } = this.app.screen;
 
-    // A centred square only covers the screen at *every* rotation if its side is
-    // at least the diagonal — sizing off width alone leaves gaps in portrait.
-    const cover = Math.hypot(width, height) * 1.1;
+    const pad = this.filterPadding * 2;
+    const cover = Math.hypot(width + pad, height + pad) * 1.05;
 
-    // Positions
     t.position.set(width / 2, height / 2);
     s.position.set(width / 2.5, height / 2.5);
     i.position.set(width / 2, height / 2);
     r.position.set(width / 2, height / 2);
 
-    // Scales: base layer keyed to the diagonal for coverage, decorative layers
-    // stay keyed to width so the composition is unchanged.
     t.width = cover;
     t.height = t.width;
     s.width = width * 0.8;
@@ -381,7 +364,54 @@ class LyricsScene {
     this.backgroundLayer.addChild(t, s, i, r);
   }
 
+  private twistPadding(radius: number) {
+    const { width, height } = this.app.screen;
+    const hw = width / 2;
+    const hh = height / 2;
+    const angle = Math.abs(TWIST_ANGLE);
+    const steps = 256;
+    let needed = 0;
+
+    for (let k = 1; k <= steps; k++) {
+      const d = (radius * k) / steps;
+      const theta = Math.pow((radius - d) / radius, 2) * angle;
+
+      const lo = Math.acos(Math.min(1, hw / d));
+      const hi = Math.asin(Math.min(1, hh / d));
+      if (lo > hi) continue; // this ring exists only outside the box
+
+      const from = Math.min(lo + theta, hi + theta);
+      const to = Math.max(lo + theta, hi + theta);
+
+      const candidates = [from, to];
+      for (let m = -2; m <= 3; m++) {
+        const p = (m * Math.PI) / 2;
+        if (p >= from && p <= to) candidates.push(p);
+      }
+      for (const c of candidates) {
+        needed = Math.max(needed, d * Math.abs(Math.sin(c)) - hh);
+        needed = Math.max(needed, d * Math.abs(Math.cos(c)) - hw);
+      }
+    }
+    return Math.ceil(needed) + 2;
+  }
+
+  private updateFilterGeometry() {
+    if (!this.twist) return;
+
+    const { width, height } = this.app.screen;
+    const radius = width * TWIST_RADIUS_RATIO;
+
+    this.twist.offset.x = width / 2;
+    this.twist.offset.y = height / 2;
+    this.twist.radius = radius;
+    this.twist.padding = this.twistPadding(radius);
+
+    this.filterPadding = this.filterStack.reduce((n, f) => n + f.padding, 0);
+  }
+
   private onResize() {
+    this.updateFilterGeometry();
     this.layoutSprites(this.sprites);
     if (this.overlaySprites.length > 0) {
       this.layoutSprites(this.overlaySprites);
@@ -406,7 +436,6 @@ window.addEventListener("load", async () => {
   if (canvas) {
     const scene = new LyricsScene();
     await scene.init(canvas, "/assets/images/12-small.webp");
-    // one frame in buffer, then fade on next paint
     scene.renderOnce();
     requestAnimationFrame(() =>
       canvas.classList.add("is-ready"));
