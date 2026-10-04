@@ -196,7 +196,7 @@ class LyricsScene {
 
           // Orbit
           const updateOrbit = (sprite: PIXI.Sprite, i: number) => {
-            var rad= -1 ;
+            var rad = -1;
             if (this.app.screen.width >= this.app.screen.height) {
               rad = this.app.screen.width / 4;
             } else {
@@ -262,6 +262,10 @@ class LyricsScene {
     this.setupScrollBasedTextureSwap();
   }
 
+  public renderOnce() {
+    this.app.render();
+  }
+
   private setupScrollBasedTextureSwap() {
     const anchors = Array.from(
       document.querySelectorAll("#film-gallery a"),
@@ -269,18 +273,17 @@ class LyricsScene {
     if (!anchors.length || !this.textures.length) return;
 
     const chooseClosestIndex = () => {
-      var docElm = document.documentElement;
-      var pos = (document.body.scrollTop || docElm.scrollTop) / (docElm.scrollHeight - docElm.clientHeight) * 100;
-      var idx = Math.round(pos / 100 * anchors.length);
-      return idx;
-    }
+      const docElm = document.documentElement;
+      const range = docElm.scrollHeight - docElm.clientHeight;
+      const pos = range > 0 ? (document.body.scrollTop || docElm.scrollTop) / range : 0;
+      return Math.min(Math.round(pos * anchors.length), anchors.length - 1);
+    };
 
-    
     const onscroll = () => {
       const idx = chooseClosestIndex();
 
       // if we're already at/transitioning to this index, cancel any pending
-      if (idx === this.currentTextureIndex){
+      if (idx === this.currentTextureIndex) {
         this.pendingTextureIndex = null;
         return;
       }
@@ -290,14 +293,23 @@ class LyricsScene {
       }
     };
 
-    // othrottle scroll position check to every 100ms
+    // snap to the scroll-matched texture on load rather than crossfading into it,
+    // so the fade-in reveals the correct image already in place
+    const initialIdx = chooseClosestIndex();
+    if (this.textures[initialIdx]) {
+      this.currentTextureIndex = initialIdx;
+      this.sprites.forEach((s) => (s.texture = this.textures[initialIdx]));
+      // re-apply sizing: in Pixi v8 width/height resolve to a scale derived from
+      // the texture's pixel dimensions, so swapping textures can change render size
+      this.onResize();
+    }
+
+    // throttle scroll position check to every 100ms
     window.addEventListener("scroll", throttle(onscroll, 100));
-    // initial check
-    onscroll();
   }
 
-  private startTextureTransitionTo(index: number){
-    if (!this.isTransitioning){
+  private startTextureTransitionTo(index: number) {
+    if (!this.isTransitioning) {
       this._startTransition(index);
     } else {
       // queue new index
@@ -325,7 +337,7 @@ class LyricsScene {
       ns.alpha = 0;
       return ns;
     });
-    
+
     // add overlay above existing sprites
     this.overlaySprites.forEach((s) => this.backgroundLayer.addChild(s));
   }
@@ -406,6 +418,10 @@ window.addEventListener("load", async () => {
   if (canvas) {
     const scene = new LyricsScene();
     await scene.init(canvas, "/assets/images/12-small.webp");
+    // one frame in buffer, then fade on next paint
+    scene.renderOnce();
+    requestAnimationFrame(() =>
+      canvas.classList.add("is-ready"));
   }
 });
 
