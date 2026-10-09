@@ -199,6 +199,15 @@
     object-fit: cover;
 }
 
+.cell--media video {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    background: var(--color-ground);
+    border: 0;
+}
+
 .cell--media img,
 .cell--media object,
 .cell--media iframe {
