@@ -35,8 +35,8 @@
             }
         }
     </style>
-  <script type="module" crossorigin src="/personal-website/assets/index-CT3PgDfu.js"></script>
-  <link rel="stylesheet" crossorigin href="/personal-website/assets/index-CGkr6HOM.css">
+  <script type="module" crossorigin src="/personal-website/assets/index-ZoivWQ-i.js"></script>
+  <link rel="stylesheet" crossorigin href="/personal-website/assets/index-CGhcyXv5.css">
 </head>
 
 <body class="surface-dark">
@@ -109,12 +109,15 @@
                             am drawn to problems in which performance and correctness are both binding requirements
                             rather than competing preferences.</p>
                         <p>In practice this has produced a DTMF decoder with an end-to-end latency below
-                            50&nbsp;ms, a RAPTOR transit router more than ten times faster than its Dijkstra
-                            baseline, and a telemetry plugin with over 140,000 downloads. On the router I led a team
-                            of three; the decoder was released publicly under GPL&nbsp;v3; and several of my fixes
-                            have been merged upstream into a GNOME Shell extension with 2,100 stars.</p>
+                            50&nbsp;ms, a live journey planner whose RAPTOR router answers in under
+                            0.1&nbsp;s and is about thirty times faster than a Dijkstra baseline, and a telemetry
+                            plugin with over 140,000 downloads. The planner began as a university project that I led
+                            with a team of three, and I have since rebuilt it and run it on my own; the decoder was
+                            released publicly under GPL&nbsp;v3; and several of my fixes have been merged upstream
+                            into a GNOME Shell extension with 2,100 stars.</p>
                         <p>I also take responsibility for the less visible engineering work: automated testing,
-                            continuous integration, and deployment on Linux.</p>
+                            continuous integration, and deploying and securing my own services on Linux, with
+                            sandboxed systemd units, SELinux, bot protection and rate limits.</p>
                         <p>Several of the projects above began as hobbies rather than assignments: the telemetry
                             plugin came out of sim racing, and the decoder out of wanting to use a Casio Databank
                             watch as a dialler. I also shoot 35&nbsp;mm film on an Olympus OM-1, which accounts for
@@ -175,13 +178,17 @@
                             <span class="tag">SignalR</span>
                             <span class="tag">Tailwind CSS</span>
                             <span class="tag">Vite</span>
-                            <span class="tag">PixiJS</span>
+                            <span class="tag">Django REST Framework</span>
+                            <span class="tag">React</span>
+                            <span class="tag">MapLibre GL</span>
                         </div>
                     </div>
                     <div class="cell">
                         <h3 class="cell-title">Web and APIs</h3>
                         <div class="tag-row" style="margin-top: 1.25rem">
                             <span class="tag">REST APIs</span>
+                            <span class="tag">JWT authentication</span>
+                            <span class="tag">WebSockets</span>
                             <span class="tag">HTML</span>
                             <span class="tag">CSS</span>
                             <span class="tag">AudioWorklet</span>
@@ -191,8 +198,10 @@
                         <h3 class="cell-title">Database and data</h3>
                         <div class="tag-row" style="margin-top: 1.25rem">
                             <span class="tag">SQL</span>
+                            <span class="tag">SQLite</span>
                             <span class="tag">Relational Database Design</span>
                             <span class="tag">Data Modelling</span>
+                            <span class="tag">GTFS</span>
                         </div>
                     </div>
                     <div class="cell">
@@ -204,6 +213,10 @@
                             <span class="tag">GitHub Actions</span>
                             <span class="tag">SSH / RSync Deployment</span>
                             <span class="tag">Systemd</span>
+                            <span class="tag">OpenResty / nginx</span>
+                            <span class="tag">SELinux</span>
+                            <span class="tag">Cloudflare</span>
+                            <span class="tag">CrowdSec</span>
                             <span class="tag">Cloud Platforms</span>
                         </div>
                     </div>
@@ -219,6 +232,7 @@
                             <span class="tag">Object-Oriented Programming</span>
                             <span class="tag">Parallel &amp; Concurrent Programming</span>
                             <span class="tag">Real-Time Systems</span>
+                            <span class="tag">Performance Benchmarking</span>
                         </div>
                     </div>
                     <div class="cell">
@@ -294,7 +308,7 @@
                             <span class="tag">AudioWorklet</span>
                         </div>
                         <p class="prose" style="margin-top: 1.5rem">
-                            <a href="https://github.com/EvianMcKeown/Databank-Dialer" class="link">GitHub &rarr;</a>
+                            <a href="https://github.com/EvianMcKeown/Casio-Databank-Dialer" class="link">GitHub &rarr;</a>
                             &nbsp;&nbsp;
                             <a href="https://dialer.ejmlabs.co.za" class="link">Live demo &rarr;</a>
                         </p>
@@ -303,32 +317,38 @@
                         <p>Full-stack web application that captures DTMF tones from a Casio Databank watch via microphone,
                             decodes them in real time using the Goertzel algorithm, and provides a click-to-dial
                             interface for smartphones &ndash; under 50&nbsp;ms end-to-end latency.</p>
-                        <p>Open-sourced under GPL&nbsp;v3 with a live public demo.</p>
+                        <p>Open-sourced under GPL&nbsp;v3 with a live public demo, limited per stream, per client and by
+                            message rate so it holds up when exposed to the internet.</p>
                     </div>
 
                     <div class="cell cell--entry">
-                        <h3 class="cell-title">Public Transportation Journey Planner</h3>
-                        <p class="prose" style="margin-top: 1.25rem">Route planning system computing optimal public
-                            transit journeys from real-world GTFS schedule data. Implements RAPTOR alongside a Dijkstra
-                            variant for over 10&times; faster query times on large networks, with more than 90 per cent test coverage on the core routing logic. Led a team of 3.</p>
+                        <h3 class="cell-title">WayFound</h3>
+                        <p class="prose" style="margin-top: 1.25rem">Public transport journey planner for Cape Town
+                            across MyCiTi, Golden Arrow and Metrorail. Implements RAPTOR over GTFS timetables, with a
+                            median query time of 88&nbsp;ms and about 30&times; faster than a Dijkstra baseline that
+                            returns the same arrivals (120 seeded journeys, 810 stops, 17,000 trips). Includes the
+                            pipeline that repairs the operators' timetables, a Django REST API, a React front end and a
+                            hardened deployment. Began as a team project that I led; since rebuilt and run on my own.</p>
                         <div class="tag-row">
                             <span class="tag tag--accent">Python</span>
                             <span class="tag">Django</span>
                             <span class="tag tag--accent">JavaScript</span>
-                            <span class="tag">Tailwind CSS</span>
+                            <span class="tag">React</span>
+                            <span class="tag">MapLibre GL</span>
                             <span class="tag">GTFS</span>
                         </div>
                         <p class="prose" style="margin-top: 1.5rem">
-                            <a href="https://github.com/EvianMcKeown/PublicTransportJourneyPlanner"
-                                class="link">GitHub &rarr;</a>
+                            <a href="https://github.com/EvianMcKeown/WayFound" class="link">GitHub &rarr;</a>
+                            &nbsp;&nbsp;
+                            <a href="https://wayfound.ejmlabs.co.za" class="link">Live demo &rarr;</a>
                         </p>
                     </div>
                     <div class="cell cell--media">
-                        <object data="assets/images/PTJP.avif" type="image/avif">
-                            <img src="assets/images/PTJP.webp" alt="Public Transportation Journey Planner interface" />
+                        <object data="assets/images/wayfound.avif" type="image/avif">
+                            <img src="assets/images/wayfound.webp"
+                                alt="WayFound planner showing a Metrorail journey from Cape Town Station to Claremont" />
                         </object>
                     </div>
-
                     <div class="cell cell--entry">
                         <h3 class="cell-title">Blur My Shell</h3>
                         <p class="label" style="margin: 1rem 0 0">Contributor &bull; May 2026</p>
