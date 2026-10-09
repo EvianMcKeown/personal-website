@@ -35,8 +35,8 @@
             }
         }
     </style>
-  <script type="module" crossorigin src="/personal-website/assets/index-ZoivWQ-i.js"></script>
-  <link rel="stylesheet" crossorigin href="/personal-website/assets/index-CGhcyXv5.css">
+  <script type="module" crossorigin src="/personal-website/assets/index-D_HLa6Gt.js"></script>
+  <link rel="stylesheet" crossorigin href="/personal-website/assets/index-D-rOVPt-.css">
 </head>
 
 <body class="surface-dark">
@@ -291,7 +291,41 @@
                         <h2 class="title">Selected work</h2>
                     </div>
 
-                    <!-- Databank Dialer leads the band as the feature -->
+                    <!-- WayFound leads the band as the feature -->
+                    <div class="cell cell--media cell--wide span-all">
+                        <video controls preload="metadata" playsinline poster="assets/images/wayfound-poster.jpg"
+                            aria-label="WayFound walkthrough: plan a trip, compare routes, avoid a line and save it">
+                            <source src="assets/video/wayfound-showcase.mp4" type="video/mp4">
+                            <track kind="captions" src="assets/video/wayfound-showcase.vtt" srclang="en" label="English" default>
+                        </video>
+                    </div>
+                    <div class="cell cell--entry">
+                        <h3 class="cell-title">WayFound &ndash; Cape Town Journey Planner</h3>
+                        <div class="tag-row">
+                            <span class="tag tag--accent">Python</span>
+                            <span class="tag">Django</span>
+                            <span class="tag tag--accent">JavaScript</span>
+                            <span class="tag">React</span>
+                            <span class="tag">MapLibre GL</span>
+                            <span class="tag">GTFS</span>
+                        </div>
+                        <p class="prose" style="margin-top: 1.5rem">
+                            <a href="https://github.com/EvianMcKeown/WayFound" class="link">GitHub &rarr;</a>
+                            &nbsp;&nbsp;
+                            <a href="https://wayfound.ejmlabs.co.za" class="link">Live demo &rarr;</a>
+                        </p>
+                    </div>
+                    <div class="cell prose">
+                        <p>Public transport journey planner for Cape Town across MyCiTi, Golden Arrow and Metrorail.
+                            Implements RAPTOR over GTFS timetables, with a median query time of 88&nbsp;ms and about
+                            30&times; faster than a Dijkstra baseline that returns the same arrivals (120 seeded
+                            journeys, 810 stops, 17,000 trips).</p>
+                        <p>Includes the pipeline that repairs the operators' timetables, a Django REST API, a React
+                            front end and a hardened deployment. Began as a team project that I led; since rebuilt and
+                            run on my own.</p>
+                    </div>
+
+                    <!-- Databank Dialer -->
                     <div class="cell cell--media cell--wide span-all">
                         <iframe src="https://www.youtube-nocookie.com/embed/tNju44CTbtU?si=cvX6kR4C44Ow-82z"
                             loading="lazy" title="Databank Dialer demo"
@@ -321,34 +355,6 @@
                             message rate so it holds up when exposed to the internet.</p>
                     </div>
 
-                    <div class="cell cell--entry">
-                        <h3 class="cell-title">WayFound</h3>
-                        <p class="prose" style="margin-top: 1.25rem">Public transport journey planner for Cape Town
-                            across MyCiTi, Golden Arrow and Metrorail. Implements RAPTOR over GTFS timetables, with a
-                            median query time of 88&nbsp;ms and about 30&times; faster than a Dijkstra baseline that
-                            returns the same arrivals (120 seeded journeys, 810 stops, 17,000 trips). Includes the
-                            pipeline that repairs the operators' timetables, a Django REST API, a React front end and a
-                            hardened deployment. Began as a team project that I led; since rebuilt and run on my own.</p>
-                        <div class="tag-row">
-                            <span class="tag tag--accent">Python</span>
-                            <span class="tag">Django</span>
-                            <span class="tag tag--accent">JavaScript</span>
-                            <span class="tag">React</span>
-                            <span class="tag">MapLibre GL</span>
-                            <span class="tag">GTFS</span>
-                        </div>
-                        <p class="prose" style="margin-top: 1.5rem">
-                            <a href="https://github.com/EvianMcKeown/WayFound" class="link">GitHub &rarr;</a>
-                            &nbsp;&nbsp;
-                            <a href="https://wayfound.ejmlabs.co.za" class="link">Live demo &rarr;</a>
-                        </p>
-                    </div>
-                    <div class="cell cell--media">
-                        <object data="assets/images/wayfound.avif" type="image/avif">
-                            <img src="assets/images/wayfound.webp"
-                                alt="WayFound planner showing a Metrorail journey from Cape Town Station to Claremont" />
-                        </object>
-                    </div>
                     <div class="cell cell--entry">
                         <h3 class="cell-title">Blur My Shell</h3>
                         <p class="label" style="margin: 1rem 0 0">Contributor &bull; May 2026</p>
